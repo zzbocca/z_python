@@ -7,7 +7,7 @@ import inspect
 import datetime
 import pytz
 
-myDebug = 0
+myDebug = 10
 
 def Denable(value):
     global myDebug
@@ -17,8 +17,11 @@ def get_Denable():
     global myDebug
     return myDebug
 
-def Dprint(value):
+def Dprint(value="", level = 1):
     if myDebug == 0:
+        return 0
+
+    if myDebug < level:
         return 0
 
     callerframerecord = inspect.stack()[1]  # 0 represents this line

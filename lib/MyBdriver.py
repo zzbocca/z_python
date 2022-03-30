@@ -1,6 +1,7 @@
 from selenium import webdriver
+import webbrowser
 
-class myDriver:
+class myBdriver:
     def __init__(self):
         options = webdriver.ChromeOptions()
         options.add_argument("--headless")

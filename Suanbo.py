@@ -12,42 +12,43 @@ from lib import MyParser
 URL1="http://soohotel.netfuhosting.com/n_time/m/page/index.php?year=2022&month="
 URL2="&day=01&group=20201016161347_6270"
 
-class Suanbo(MyParser):
-    def __init__(self):
-        super(Suanbo, self).__init__()
+
+class Suanbo(MyParser.MyParser):
+    def __init__(self, timeout):
+        super(Suanbo, self).__init__(timeout)
         self.month_list=[]
+        self.search_url()
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        super().__exit__()
+    def __del__(self):
+        super().__del__()
 
-    def parse_data(self ,url):
-        ret_list = []
+    def parse_data(self, url):
+        MyDebug.Dprint(url)
+        self.ret = ""
+        smessage = ""
+
         with requests.Session() as s:
             res = s.get(url)
             if res.status_code == requests.codes.ok:
                 soup = BeautifulSoup(res.text, 'lxml')
 
-                result = soup.find_all("td", class_="td03")
-                for tds in result:
-                    classn = tds["class"]
+                result = soup.find_all("a", class_="under hand num11")
+                for block in result:
+                    MyDebug.Dprint(block, 7)
+                    ret = block.findChildren()
+                    ch = ret[0]
+                    MyDebug.Dprint(ch, 7)
 
-                    if len(classn) >=2 :
-                        if classn[1] == "bg_org" or classn[1] == "bg_gre":
-                            continue
+                    if ch is not None and len(ch) != 0:
+                        color = ch['class'][0]
+                        print(color)
+                        day = ch.text
 
-                    MyDebug.Dprint(classn)
-                    colors = tds.font["class"]
-                    day = tds.font.text
-
-                    MyDebug.Dprint(colors)
-                    if colors[0] == "dgr":
-                        continue
-
-                    for color in colors:
                         if color == "blue":
-                            smessage = "예약 가능 : " str(day) + " " + base_url
-                            ret_list.append(smessage)
-        return ret_list
+                            smessage = smessage + "예약 가능 : " + str(day) + " " + url + "\n"
+
+        if len(smessage) > 0:
+            self.ret = smessage
 
     def search_url(self):
         check_next_month=0
