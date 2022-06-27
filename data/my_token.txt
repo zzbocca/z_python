@@ -1,0 +1,7 @@
+{
+    "my_token"      : "",
+    "my_chat_id"    : "",
+    "my_chan_id"    : "",
+    "my_chan_id_2"  : "",
+    "my_chan_id_3"  : ""
+}
