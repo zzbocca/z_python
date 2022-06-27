@@ -17,23 +17,30 @@ now = 0
 toss_url = "https://quizbang.tistory.com/category/%ED%80%B4%EC%A6%88%20%EC%A0%95%EB%8B%B5/%ED%86%A0%EC%8A%A4%20%ED%96%89%EC%9A%B4%ED%80%B4%EC%A6%88"
 cw_url = "https://quizbang.tistory.com/category/%ED%80%B4%EC%A6%88%20%EC%A0%95%EB%8B%B5/%EC%BA%90%EC%8B%9C%EC%9B%8C%ED%81%AC"
 default_url = "https://quizbang.tistory.com/"
-
+file_path_name = "./data/chungdab"
+#{index : [data_string, message_id]}
 class ChungDab(MyParser.MyParser):
     def __init__(self, timeout):
-        super().__init__(timeout)
-        self.tel_channel = 0
+        super().__init__(timeout, 1)
         self.parser_list = []
         self.today_str =""
+        self.set_valid_time(9, 21)
+        self.check_current()
         self.search_url()
-        self.data = MyData.MyList("./data/chungdab.txt") #data 0 : index, 1 : answer, 2 : msg_id
-        self.data.load_data()
-        self.data_list = self.data.get_data()
+        self.data = MyData.MyDict(file_path_name + self.today_str +".txt")
+        if self.data.load_data() == 0:
+            self.data_clear()
+        self.data_dict = self.data.get_data()
+        dprint(self.data_dict,5)
+
+    def data_clear(self):
+        os.system('rm -fr ' + file_path_name + "*")
+        self.data.clear_data()
 
     def check_ignore(self, now):
         if now.hour == 9 and now.minute == 0:
             self.today_str = str(now.month) + "월" + str(now.day) + "일"
-            self.data_default()
-            self.check_default()
+
             dprint(self.today_str, 4)
 
         if self.today_str is None or len(self.today_str) == 0:
@@ -52,6 +59,15 @@ class ChungDab(MyParser.MyParser):
         #        return 1
         #else:
         #    return 0
+        
+    def do_enable(self):
+        self.clear_url_list()
+        self.parser_list.clear()
+        self.search_url()
+
+    def do_disable(self):
+        self.clear_url_list()
+        self.parser_list.clear()
 
     def search_url(self):
         self.set_url(toss_url)
@@ -83,7 +99,10 @@ class ChungDab(MyParser.MyParser):
                 while index < target:
                     result = soup.select_one("#content > div.inner > div:nth-child(" + str(index) + ") > a")
                     list_ref = result['href']
-                    list_index = int(list_ref[1:5])
+                    if list_ref[5] == '?':
+                        list_index = int(list_ref[1:5])
+                    else:
+                        list_index = int(list_ref[1:6])
                     dprint(list_index, 8)
 
                     result = soup.select_one("#content > div.inner > div:nth-child(" + str(index) + ") > a > span.title")
@@ -93,16 +112,30 @@ class ChungDab(MyParser.MyParser):
                         break
                     start_index = tmp_index + len(self.today_str)
 
+                    end = result.text.find("실시간")
+                    if end != -1:
+                        brand = result.text[0:end]
+                    else:
+                        brand = result.text
+
                     name = result.text[start_index:]
                     dprint(name, 8)
 
                     if self.search_parser(list_index) is None:
                         target_url = default_url + str(list_index)
+                        str_list_index = str(list_index)
+                        if self.data_dict.get(str_list_index) is None:
+                            answer = ""
+                            msg_id = 0
+                        else:
+                            answer = self.data_dict[str_list_index][0]
+                            msg_id = self.data_dict[str_list_index][1]
+
                         if target == 2:
-                            toss = Toss(name, list_index, target_url)
+                            toss = Toss(name, list_index, brand, target_url, answer=answer, msg_id=msg_id)
                             self.parser_list.append(toss)
                         else:
-                            cw = CashWalk(name, list_index, target_url)
+                            cw = CashWalk(name, list_index, brand, target_url, answer=answer, msg_id=msg_id)
                             self.parser_list.append(cw)
 
                     index = index + 1
@@ -115,7 +148,7 @@ class ChungDab(MyParser.MyParser):
                         self.ret_list.append(sub)
 
     def parse_start(self, tel):
-        dprint()
+        sent = 0
         if self.check_current() == 0:
             return
         dprint(self.url_list)
@@ -125,17 +158,24 @@ class ChungDab(MyParser.MyParser):
                 self.parse_data(url)
                 if self.ret_list is not None and len(self.ret_list) > 0:
                     for ret_obj in self.ret_list:
-                        print(ret_obj.ret)
-                        ret_obj.msg_id = tel.send_answer(ret_obj.ret, self.tel_channel, ret_obj.msg_id)
+                        ret_obj.msg_id = tel.send_answer(ret_obj.ret, self.send_result_to_ch, ret_obj.msg_id)
+                        sent = 1
+                        if self.data_dict.get(str(ret_obj.index)) is None:
+                            self.data_dict[str(ret_obj.index)] = [ret_obj.ret, ret_obj.msg_id]
+
+        if sent == 1:
+            self.data.save_data()
 
 class AnswerSub(MyParser.MyParser):
-    def __init__(self, name, title, index, url):
-        super().__init__()
+    def __init__(self, name, title, index, brand, url, answer="", msg_id=0):
+        super().__init__(send_to_ch=1)
         self.index = 0
         self.name = name
         self.title = title
         self.index = index
-        self.answer = ""
+        self.brand = brand
+        self.answer = answer
+        self.msg_id = msg_id
         self.set_url(url)
 
     def __exit__(self, exc_type, exc_val, exc_tb):
@@ -148,17 +188,13 @@ class AnswerSub(MyParser.MyParser):
         return self.answer
 
     def parse_data(self, url):
-
-        if self.check_current() == 0:
-            return
-
         self.ret = ""
 
         dprint("parse url :" + url, 8)
 
         with requests.Session() as s:
             res = s.get(url)
-            smessage = str(self.index) + " " + self.name
+            smessage = self.brand
             dprint(smessage, 8)
             if res.status_code == requests.codes.ok:
                 soup = BeautifulSoup(res.text, "lxml")
@@ -167,21 +203,22 @@ class AnswerSub(MyParser.MyParser):
                 if answer_data is None or len(answer_data) == 0:
                     return
 
-                dprint(answer_data, 5)
-                if self.answer == answer_data:
+                smessage = smessage + "<a href='" + url + "'> " + answer_data + " </a>"
+                dprint('index = %d value = %s. answer = %s send msg = %s' % (self.index, answer_data, self.answer, smessage), 31)
+
+                if self.answer == smessage:
                     return
 
-                self.answer = answer_data
-                dprint('index = %d value = %s.' % (self.index, self.answer), 5)
-                smessage = smessage + self.answer + " " + url
+                self.answer = smessage
 
                 self.ret = smessage
                 dprint(smessage, 8)
+
         dprint(self.ret, 7)
     
 class Toss(AnswerSub):
-    def __init__(self, title, index, url):
-        super(Toss, self).__init__("[토스]", title, index, url)
+    def __init__(self, title, index, brand, url, answer="", msg_id = 0):
+        super(Toss, self).__init__("[토스]", title, index, brand, url, answer, msg_id)
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         pass
@@ -214,8 +251,8 @@ class Toss(AnswerSub):
 
 
 class CashWalk(AnswerSub):
-    def __init__(self, title, index, url):
-        super(CashWalk, self).__init__("[캐시워크]", title, index, url)
+    def __init__(self, title, index, brand, url, answer="", msg_id = 0):
+        super(CashWalk, self).__init__("[캐시워크]", title, index, brand, url, answer, msg_id)
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         pass

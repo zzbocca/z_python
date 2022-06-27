@@ -1,5 +1,8 @@
 from lib.MyDebug import Dprint as dprint
 from lib import MyFile
+from deepdiff import DeepDiff
+from copy import deepcopy
+import collections
 
 class MyData:
     def __init__(self, filename = "", type = ""):
@@ -33,9 +36,12 @@ class MyData:
 
 
 class MyDict(MyData):
-    def __init__(self, filename = "", type = ""):
+    def __init__(self, filename = "", type = "", data = None):
         super(MyDict, self).__init__(filename, type)
-        self.dic_data = {}
+        if data is not None:
+            self.dic_data = deepcopy(data)
+        else:
+            self.dic_data = {}
 
     def __del__(self):
         super(MyDict, self).__del__()
@@ -54,6 +60,9 @@ class MyDict(MyData):
         else:
             self.dic_data[key].remove(value)
 
+    def clear_data(self):
+        self.dic_data.clear()
+
     def copy_data(self, data):
         self.dic_data = data
         return self.dic_data
@@ -64,9 +73,42 @@ class MyDict(MyData):
     def get_data_len(self):
         return len(self.dic_data)
 
-    def save_data(self):
-        if self.dfile is not None:
+    def deep_update(self, overrides, source=None):
+        """
+        Update a nested dictionary or similar mapping.
+        Modify ``source`` in place.
+        """
+        if source is None:
+            source = self.dic_data
+        for key, value in overrides.items():
+            if isinstance(value, collections.Mapping) and value:
+                returned = self.deep_update(value, source.get(key, {}))
+                source[key] = returned
+            else:
+                if isinstance(value, list) and value:
+                    source[key] = overrides[key].copy()
+                else:
+                    source[key] = overrides[key]
+        return source
+
+    def save_data(self, set_data=None, save=True):
+        if set_data is not None:
+            diff = DeepDiff(set_data, self.dic_data)
+            if len(diff) == 0:
+                return 0
+            else:
+                self.deep_update(set_data)
+        dprint(self.dic_data, 4)
+        if self.dfile is not None and save==True:
             self.dfile.write(self.dic_data)
+
+        return 1
+
+    def get_diff_data(self, set_data):
+        if set_data is None:
+            return None
+        diff = DeepDiff(self.dic_data, set_data)
+        return diff
 
     def load_data(self):
         if self.dfile is not None and self.dfile.exist():
@@ -90,24 +132,27 @@ class MyList(MyData):
         if value is None:
             return
 
-        self.ldata.append(value)
+        self.list_data.append(value)
 
     def del_data(self, value):
-        if len(self.ldata) != 0:
-            self.ldata.remove(value)
+        if len(self.list_data) != 0:
+            self.list_data.remove(value)
+
+    def clear_data(self):
+        self.list_data.clear()
 
     def del_data_index(self, index):
-        if index < len(self.ldata):
-            del self.ldata[index]
+        if index < len(self.list_data):
+            del self.list_data[index]
 
     def get_data(self):
-        return self.ldata
+        return self.list_data
 
     def get_data_len(self):
-        return len(self.ldata)
+        return len(self.list_data)
 
     def save_data(self):
         super(MyList, self).save_data()
 
     def load_data(self):
-        self.ldata = super(MyList, self).load_data()
+        self.list_data = super(MyList, self).load_data()

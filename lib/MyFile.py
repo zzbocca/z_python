@@ -22,7 +22,6 @@ class MyFile:
 
     def read(self):
         if os.path.isfile(self.fname):
-            dprint(self.type)
             if self.type == "json":
                 with open(self.fname, 'r') as filehandle:
                     return json.load(filehandle)
@@ -38,8 +37,10 @@ class MyFile:
             f.write("‚n")
             f.close()
         elif self.type == "json":
-            with open(self.fname, 'w') as filehandle:
-                filehandle.write(json.dumps(value, indent=4))
+            with open(self.fname, 'w', encoding='UTF-8') as filehandle:
+                dprint("ok")
+                json.dump(value, filehandle, indent=4)
+                dprint("ok")
         elif self.type == "kjson":
             with open(self.fname, 'w', encoding='UTF-8') as filehandle:
                 json.dump(value, filehandle, ensure_ascii=False, indent=4)

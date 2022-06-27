@@ -3,7 +3,7 @@ import threading
 import schedule
 import queue
 from lib import MyParser
-from lib import MyDebug
+from lib.MyDebug import Dprint as dprint
 
 
 class MySchd:
@@ -25,22 +25,21 @@ class MySchd:
         self.sthd.start()
 
     def add_schedule(self, parser):
-        print("add sch")
-
-        print(parser)
+        dprint("add sch")
         sec = parser.get_sch_timeout()
-        print(sec)
         if sec != 0:
             self.que.put(parser)
-            print("start sch")
+            dprint("start sch")
 
         if sec > 0:
-            print("do start")
-            print(sec)
+            dprint("do start")
             return schedule.every(sec).seconds.do(self.que.put, parser)
+        else:
+            parser.set_sch_timeout(0)
+            return None
 
     def del_schedule(self, event):
-        MyDebug.Dprint("delete event")
+        dprint("delete event")
         schedule.cancel_job(event)
 
     def work_parse(self):
@@ -49,9 +48,8 @@ class MySchd:
             if self.que.empty() is True:
                 time.sleep(1)
             else:
-                print("get parser")
+                dprint("get parser")
                 parser = self.que.get()
-                print(parser)
                 parser.parse_start(self.tel)
                 self.que.task_done()
 

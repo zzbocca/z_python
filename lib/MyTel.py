@@ -1,77 +1,75 @@
 #!/usr/bin/python3
 # -*- coding: cp949 -*-
 
-import re
-import sys
-import io
 from telegram import Bot
-#from telegram.ext import Dispatcher
-#from threading import Thread
-#from queue import Queue
+from telegram.ext import Updater, CommandHandler, CallbackQueryHandler
+from lib.MyDebug import Dprint as dprint
+
+#import telebot
 from lib import MyDebug
 from lib import MyData
 
 class MyTel:
     def __init__(self):
         self.tel_data = MyData.MyDict("./data/my_token.txt")
-        self.saving_tel_data()
         self.tel_data.load_data()
-        self.send = 0
+        self.send = 1
         if self.tel_data.get_data_len() == 0:
-            MyDebug.Dprint("TOKEN Data do not exist.", 0)
+            dprint("TOKEN Data do not exist.", 0)
         data = self.tel_data.get_data()
         self.mytoken = data['my_token']
         self.chat_id = data['my_chat_id']   #chatting id for only aykim
-        self.chan_id = data['my_chan_id']   #channel id for all group
-        self.setup()
+        self.chan_list = []
+        for key, value in data.items():
+            if key[:10] == 'my_chan_id':
+                self.chan_list.append(value)
 
-    def saving_tel_data(self):
-        self.tel_data.add_data("my_token", "1695159376:AAF1pmkgMneBm3dmiaG_w1oBjBpz55esCNc")
-        self.tel_data.add_data("my_chat_id", '1681474946')
-        self.tel_data.add_data("my_chan_id", '1681474946')
-        self.tel_data.save_data()
+        self.bot = Bot(self.mytoken)
+        self.updater = Updater(self.mytoken)
 
-    def setup(self):
-        print(self.mytoken)
-        self.bot = Bot(token=self.mytoken)
-        #self.update_queue = Queue()
-        #self.dispatcher = Dispatcher(self.bot, self.update_queue)
-        #if self.thread :
-        #    self.thread.stop()
-        #    self.thread.delete()
-
-        #self.thread = Thread(target = self.dispatcher.start, name = 'dispatcher')
-        #self.thread.start()
+    def __del__(self):
+        self.updater.dispatcher.stop()
+        self.updater.job_queue.stop()
+        self.updater.stop()
 
     def disconnect(self):
         self.send = 0
 
-    def set_token(self, m_token):
-        self.mytoken = m_token
-
-    def send_answer(self, value, to_chan = 0, msg_id = 0):
-        MyDebug.Dprint(value, 1)
+    def send_answer(self, value, to_chan=0, msg_id=0, show_markup=None):
+        dprint(value, 1)
 
         if self.send == 0:
             return None
-
         if to_chan == 0:
-            self.bot.sendMessage(chat_id=self.chat_id, text=value)
-            return 0
-        else:
+            id = self.chat_id
+        elif to_chan > 0:
+            index = to_chan - 1
+            id = self.chan_list[index]
+        dprint(id, 1)
+
+        if show_markup is not None:
             if msg_id is not None and msg_id != 0:
-                self.bot.edit_message_text(chat_id=self.chan_id, text=value, message_id=msg_id)
-                return msg_id
+                return self.bot.edit_message_text(chat_id=id, text=value, message_id=msg_id,
+                                           reply_markup=show_markup)['message_id']
             else:
-                return self.bot.sendMessage(chat_id=self.chan_id, text=value)['message_id']
+                return self.bot.sendMessage(chat_id=id, text=value, reply_markup=show_markup)['message_id']
+        else:
+            if to_chan == 0:
+                self.bot.sendMessage(chat_id=id, text=value, parse_mode="HTML", disable_web_page_preview="true")#, parse_mode="Markdown")
+                return 0
+            else:
+                if msg_id is not None and msg_id != 0:
+                    return self.bot.edit_message_text(chat_id=id, text=value, message_id=msg_id, parse_mode="HTML", disable_web_page_preview="true")['message_id']
+                else:
+                    return self.bot.sendMessage(chat_id=id, text=value, parse_mode="HTML", disable_web_page_preview="true")['message_id']
 
+    def add_handler(self, cmd, func):
+        self.updater.dispatcher.add_handler(CommandHandler(cmd, func))
 
-    def webhook(self, update):
-        pass
-        #self.update_queue.put(update)
+    def add_cb_handler(self, func):
+        self.updater.dispatcher.add_handler(CallbackQueryHandler(func))
 
-    async def newMessageListener(self, event):
-        pass
-        #newMessage = event.message.message
+    def poll(self):
+        self.updater.start_polling()
+        self.updater.idle()
 
-        #subjectFiltered = re.findall(r"()")

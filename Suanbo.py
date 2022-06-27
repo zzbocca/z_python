@@ -15,12 +15,21 @@ URL2="&day=01&group=20201016161347_6270"
 
 class Suanbo(MyParser.MyParser):
     def __init__(self, timeout):
-        super(Suanbo, self).__init__(timeout)
+        super(Suanbo, self).__init__(timeout, send_to_ch=2)
         self.month_list=[]
         self.search_url()
 
     def __del__(self):
         super().__del__()
+
+    def do_enable(self):
+        self.update_data()
+        self.month_list.clear()
+        self.search_url()
+
+    def do_disable(self):
+        self.update_data()
+        self.month_list.clear()
 
     def parse_data(self, url):
         MyDebug.Dprint(url)
@@ -41,7 +50,6 @@ class Suanbo(MyParser.MyParser):
 
                     if ch is not None and len(ch) != 0:
                         color = ch['class'][0]
-                        print(color)
                         day = ch.text
 
                         if color == "blue":

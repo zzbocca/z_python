@@ -6,9 +6,10 @@ from lib import MyDebug
 from lib import MyTel
 from lib import MyParser
 
+
 class Sdeal(MyParser.MyParser):
     def __init__(self, timeout):
-        super(Sdeal, self).__init__(timeout)
+        super(Sdeal, self).__init__(timeout, send_to_ch=2)
         self.set_url("https://deal.11st.co.kr/browsing/DealAction.tmall?method=getTimeDeal")
 
     def __del__(self):
@@ -27,7 +28,7 @@ class Sdeal(MyParser.MyParser):
                 while count < 10:
                     result = soup.select_one("#layBody > div.md_wrap.sub_md > div:nth-child(" + str(index) + ") > div > div > div > a")
                     MyDebug.Dprint(result, 8)
-                    if result is None :
+                    if result is None:
                         break
                     url = result['href']
                     MyDebug.Dprint(url, 8)
@@ -45,7 +46,7 @@ class Sdeal(MyParser.MyParser):
                     index = index + 1
                     count = count + 1
 
-                    send_data += name + " : " + price + os.linesep + url +os.linesep
+                    send_data += name + " : " + price + os.linesep + url + os.linesep
 
                 MyDebug.Dprint(send_data, 7)
                 ret_data.append(send_data)
@@ -71,12 +72,12 @@ class Sdeal(MyParser.MyParser):
                     name = result.text
                     MyDebug.Dprint(name, 8)
 
-                    url = "https://www.11st.co.kr/products/"+ num + "?trTypeCd=48"
+                    url = "https://www.11st.co.kr/products/" + num + "?trTypeCd=48"
                     send_data += " * " + only_time + " : " + name + os.linesep + url + os.linesep
 
                     index = index + 1
                     count = count + 1
-                    if count % 20 == 0 :
+                    if count % 20 == 0:
                         ret_data.append(send_data)
                         send_data = ""
 

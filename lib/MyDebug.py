@@ -29,7 +29,7 @@ def Dprint(value="", level = 1):
     frame = callerframerecord[0]
     info = inspect.getframeinfo(frame)
 
-    print('[%s'%info.function, ':%s]'%info.lineno, value)
+    print('[%s'%info.filename, ': %s'%info.function, ': %s]'%info.lineno, value)
     return 1
 
 def print_now():
