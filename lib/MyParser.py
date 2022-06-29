@@ -6,7 +6,7 @@ from lib.MyDebug import Dprint as dprint
 
 
 class MyParser:
-    def __init__(self, timeout=60, send_to_ch = 0):
+    def __init__(self, timeout="60", send_to_ch=0, disable_preview='true'):
         self.check_time = 0
         self.start_h = 0
         self.end_h = 0
@@ -17,8 +17,8 @@ class MyParser:
         self.msg_id = 0
         self.tel = None
         self.cmd_list = {}
-        self.schd_event=None
         self.send_result_to_ch = send_to_ch
+        self.disable_preview = disable_preview
 
     def __del__(self):
         self.ret_list.clear()
@@ -43,15 +43,15 @@ class MyParser:
             self.cmd_list[cmd] = ""
         self.tel.add_handler(cmd, func)
 
-    def set_sch_timeout(self, msec):
-        if self.timeout == msec:
+    def set_sch_timeout(self, sec):
+        if self.timeout == sec:
             return
-        elif self.timeout == 0 and msec != 0:
+        elif self.timeout == "0" and sec != "0":
             self.do_enable()
         else:
             self.do_disable()
 
-        self.timeout = msec
+        self.timeout = sec
 
     def do_enable(self):
         pass
@@ -142,11 +142,12 @@ class MyParser:
                 self.parse_data(url)
                 if self.ret is not None and len(self.ret) != 0:
                     dprint(self.ret, 1)
-                    tel.send_answer(self.ret, to_chan=self.send_result_to_ch)
+                    tel.send_answer(self.ret, to_chan=self.send_result_to_ch, disable_preveiw=self.disable_preview)
                 elif self.ret_list is not None and len(self.ret_list) > 0:
                     dprint(self.ret_list, 1)
                     for ret in self.ret_list:
-                        tel.send_answer(ret, to_chan=self.send_result_to_ch)
+                        print(self.send_result_to_ch)
+                        tel.send_answer(ret, to_chan=self.send_result_to_ch, disable_preveiw=self.disable_preview)
 
 
 

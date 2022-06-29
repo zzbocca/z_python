@@ -35,7 +35,7 @@ class MyTel:
     def disconnect(self):
         self.send = 0
 
-    def send_answer(self, value, to_chan=0, msg_id=0, show_markup=None):
+    def send_answer(self, value, to_chan=0, msg_id=0, show_markup=None, disable_preveiw='True'):
         dprint(value, 1)
 
         if self.send == 0:
@@ -55,13 +55,14 @@ class MyTel:
                 return self.bot.sendMessage(chat_id=id, text=value, reply_markup=show_markup)['message_id']
         else:
             if to_chan == 0:
-                self.bot.sendMessage(chat_id=id, text=value, parse_mode="HTML", disable_web_page_preview="true")#, parse_mode="Markdown")
+                self.bot.sendMessage(chat_id=id, text=value, parse_mode="HTML", disable_web_page_preview=disable_preveiw)#, parse_mode="Markdown")
                 return 0
             else:
                 if msg_id is not None and msg_id != 0:
-                    return self.bot.edit_message_text(chat_id=id, text=value, message_id=msg_id, parse_mode="HTML", disable_web_page_preview="true")['message_id']
+                    dprint("msg_id = " + str(msg_id), 1)
+                    return self.bot.edit_message_text(chat_id=id, text=value, message_id=msg_id, parse_mode="HTML", disable_web_page_preview=disable_preveiw)['message_id']
                 else:
-                    return self.bot.sendMessage(chat_id=id, text=value, parse_mode="HTML", disable_web_page_preview="true")['message_id']
+                    return self.bot.sendMessage(chat_id=id, text=value, parse_mode="HTML", disable_web_page_preview=disable_preveiw)['message_id']
 
     def add_handler(self, cmd, func):
         self.updater.dispatcher.add_handler(CommandHandler(cmd, func))

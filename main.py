@@ -22,11 +22,12 @@ class MyProc:
         self.parser = {}
         if len(self.pdata.dic_data) == 0:
             self.parser_list = {
-                'c': ["ChungDab", 0],
-                'p': ["Naverpay", 3600],
-                'n': ["Nanji", 0],
-                'd': ["Sdeal", 0],
-                's': ["Suanbo", 0]
+                'c': ["ChungDab", "0"],
+                'p': ["Naverpay", "3600"],
+                'n': ["Nanji", "0"],
+                'd': ["Sdeal", "0"],
+                's': ["Suanbo", "0"],
+                't': ["Tmon", "0"]
             }
             self.pdata.save_data(self.parser_list)
         else:
@@ -39,7 +40,7 @@ class MyProc:
                 value.set_Telegram(self.tel)
                 value.schd_event = self.mySchd.add_schedule(value)
                 if value.schd_event is None:
-                    self.parser_list[key][1] = 0
+                    self.parser_list[key][1] = "0"
 
         self.pdata.save_data(self.parser_list)
 
@@ -67,7 +68,7 @@ class MyProc:
         if len(context.args) == 0:
             modules = ""
             for key, value in self.pdata.dic_data.items():
-                msg = msg + "/s " + key + " [timeout]  : set the " + value[0] + "'s timeout. now = (" + str(value[1]) + " sec)\n"
+                msg = msg + "/s " + key + " [timeout]  : set the " + value[0] + "'s timeout. now = (" + value[1] + " sec)\n"
                 modules = modules + key + " "
 
             msg = msg + "\n/h [" + modules + "] : print module's help"
@@ -79,7 +80,7 @@ class MyProc:
     def set_timeout_from_bot(self, update, context):
         if len(context.args) != 0:
             cmd = context.args[0]
-            timeout = int(context.args[1])
+            timeout = context.args[1]
             self.parser_list[cmd][1] = timeout
             self.parser_obj.dic_data[cmd].set_sch_timeout(timeout)
 
@@ -102,7 +103,7 @@ class MyProc:
                             parser.schd_event = self.mySchd.add_schedule(parser)
                             dprint(parser.schd_event)
                             if parser.schd_event is None:
-                                self.parser_list[index[0]][1] = 0
+                                self.parser_list[index[0]][1] = "0"
 
             if len(updated):
                 self.pdata.save_data(self.parser_list)
@@ -114,6 +115,6 @@ class MyProc:
 
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
-    MyDebug.Denable(0)
+    MyDebug.Denable(5)
     proc = MyProc()
     proc.tel.poll()

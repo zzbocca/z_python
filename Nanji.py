@@ -213,7 +213,7 @@ class Nanji(MyParser.MyParser):
     # get reservation url
     def get_reserve_url(self):
         diff = 0
-        if self.timeout == 0:
+        if self.timeout == "0":
             return
 
         for key, value in self.site_dict.items():

@@ -30,6 +30,8 @@ class Naverpay(MyParser.MyParser):
         self.login.load_data()
         self.login_list = self.login.get_data()
         self.last_index = 0
+        self.send_start=9
+        self.send_end=22
 
     def check_valid_time(self):
         now_time = super(Naverpay, self).check_valid_time()
@@ -41,6 +43,14 @@ class Naverpay(MyParser.MyParser):
             self.now = None
 
         return self.now
+
+    def send_valid_time(self):
+        if self.now is None:
+            return 0
+        if self.now.hour >= self.send_start and self.now.hour <= self.send_end:
+            return 1
+        else:
+            return 0
 
     def do_enable(self):
         self.clear_url_list()
@@ -109,9 +119,11 @@ class Naverpay(MyParser.MyParser):
         for sub in self.parser_list:
             for url in sub.url_list:
                 sub.parse_data(url)
-                if len(sub.ret) != 0:
-                    dprint(sub.ret, 2)
-                    self.ret_list.append(sub)
+                dprint(sub.ret_list)
+                if len(sub.ret_list) != 0:
+                    dprint(sub.ret_list, 2)
+                    for ret in sub.ret_list:
+                        self.ret_list.append(ret)
 
     def parse_start(self, tel):
         if self.check_current() == 0:
@@ -120,13 +132,11 @@ class Naverpay(MyParser.MyParser):
             dprint(url, 3)
             if len(url) > 0:
                 self.parse_data(url)
-                if self.ret_list is not None and len(self.ret_list) > 0:
-                    for ret_obj in self.ret_list:
-                        if ret_obj.ret_list is not None and len(ret_obj.ret_list) > 0:
-                            for ret in self.ret_list:
-                                tel.send_answer(ret, self.send_result_to_ch)
-                        elif ret_obj.ret is not None and len(ret_obj.ret):
-                            tel.send_answer(ret_obj.ret, self.send_result_to_ch)
+                if self.send_valid_time() >= 0:
+                    if self.ret_list is not None and len(self.ret_list) > 0:
+                        for ret in self.ret_list:
+                            tel.send_answer("[클릭 네이버 페이] " + ret, self.send_result_to_ch)
+                        self.ret_list.clear()
 
 
 class AnswerSub(MyParser.MyParser):
@@ -191,7 +201,7 @@ class AnswerSub(MyParser.MyParser):
                     index += 1
 
                 for ret_url in self.ret_list:
-                    dprint(ret_url)
+                    dprint(ret_url, 2)
                     self.driver.get(ret_url)
                     try:
                         WebDriverWait(self.driver, 3).until(EC.alert_is_present(), 'Timed out waiting for PA creation confirmation popup to appear.')

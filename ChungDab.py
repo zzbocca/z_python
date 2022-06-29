@@ -98,6 +98,9 @@ class ChungDab(MyParser.MyParser):
 
                 while index < target:
                     result = soup.select_one("#content > div.inner > div:nth-child(" + str(index) + ") > a")
+                    if result is None:
+                        index += 1
+                        continue
                     list_ref = result['href']
                     if list_ref[5] == '?':
                         list_index = int(list_ref[1:5])
@@ -159,6 +162,7 @@ class ChungDab(MyParser.MyParser):
                 if self.ret_list is not None and len(self.ret_list) > 0:
                     for ret_obj in self.ret_list:
                         ret_obj.msg_id = tel.send_answer(ret_obj.ret, self.send_result_to_ch, ret_obj.msg_id)
+                        dprint(ret_obj.msg_id)
                         sent = 1
                         if self.data_dict.get(str(ret_obj.index)) is None:
                             self.data_dict[str(ret_obj.index)] = [ret_obj.ret, ret_obj.msg_id]
